@@ -107,5 +107,26 @@ namespace RIN.WebAPI.Controllers
         {
                 return await Db.GetLeaderboard(leaderboardId, page);
         }
+
+        [HttpGet("characters/{characterGuid}/garage_slots/{slotId}/perks")]
+        [R5SigAuthRequired]
+        public async Task<object> GarageSlotPerks(long characterGuid, int slotId)
+        {
+            return Content("[]", "application/json");
+        }
+
+        [HttpGet("squad_builder/lfp")]
+        [R5SigAuthRequired]
+        public async Task<object> SquadBuilderLfp()
+        {
+            return Content("{\"results\":[]}", "application/json");
+        }
+
+        [HttpGet("trade/products/inventory_expansion")]
+        [R5SigAuthRequired]
+        public async Task<object> TradeProductsInventoryExpansion()
+        {
+            return Content("[]", "application/json");
+        }
     }
 }

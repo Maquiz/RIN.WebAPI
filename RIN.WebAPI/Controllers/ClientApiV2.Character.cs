@@ -87,6 +87,20 @@ namespace RIN.WebAPI.Controllers
             return Content("{}", "application/json");
         }
 
+        [HttpGet("characters/{characterGuid}/mail")]
+        [R5SigAuthRequired]
+        public async Task<object> GetMail(long characterGuid)
+        {
+            return Content("{\"page\":0,\"total_count\":0,\"results\":[]}", "application/json");
+        }
+
+        [HttpGet("characters/{characterGuid}/market/listings")]
+        [R5SigAuthRequired]
+        public async Task<object> GetMarketListings(long characterGuid)
+        {
+            return Content("[]", "application/json");
+        }
+
         private Character CreateDefaultChar(string name = "Aero")
         {
             var character = new Character
