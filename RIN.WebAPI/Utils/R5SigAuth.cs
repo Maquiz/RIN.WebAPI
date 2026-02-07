@@ -1,6 +1,7 @@
 ﻿using FauFau.Net.Web;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using RIN.Core;
@@ -20,13 +21,17 @@ namespace RIN.WebAPI.Utils
     [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
     public class R5SigAuth : Attribute, IAsyncAuthorizationFilter
     {
+        private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
+
         private WebApiConfigSettings Config;
         private DB Db;
+        private IMemoryCache Cache;
 
-        public R5SigAuth(IOptions<WebApiConfigSettings> config, DB db)
+        public R5SigAuth(IOptions<WebApiConfigSettings> config, DB db, IMemoryCache cache)
         {
             Config = config.Value;
             Db     = db;
+            Cache  = cache;
         }
 
         public async Task OnAuthorizationAsync(AuthorizationFilterContext context)
@@ -36,16 +41,30 @@ namespace RIN.WebAPI.Utils
 
             var str = context.HttpContext.Request.Headers.TryGetValue("X-Red5-Signature", out StringValues header) ? header.FirstOrDefault() : null;
             if (str == null)
+            {
                 context.Result = CreateError(Error.Codes.ERR_INCORRECT_USERPASS, "No Signature");
+                return;
+            }
 
             // TODO: Verify request body with sig
 
             var uid = HttpUtility.UrlDecode(Red5Sig.ParseString(str).UID.ToString());
 
-            // TODO: Cache the users uuid to account id to skip a db call
-            var loginResult = await Db.GetLoginData(uid);
+            var cacheKey = $"auth:{uid}";
+            if (!Cache.TryGetValue(cacheKey, out LoginResult loginResult))
+            {
+                loginResult = await Db.GetLoginData(uid);
+                if (loginResult != null)
+                {
+                    Cache.Set(cacheKey, loginResult, CacheDuration);
+                }
+            }
+
             if (loginResult == null)
+            {
                 context.Result = CreateError(Error.Codes.ERR_INCORRECT_USERPASS);
+                return;
+            }
 
             var authed = Auth.Verify(loginResult.secret, str.AsSpan());
             if (!authed)

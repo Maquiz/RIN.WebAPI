@@ -53,6 +53,7 @@ builder.Services.Configure<ServerDefaultsSettings>(builder.Configuration.GetSect
 builder.Services.Configure<DbConnectionSettings>(builder.Configuration.GetSection(DbConnectionSettings.NAME));
 
 // Add services to the container.
+builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<DB>();
 builder.Services.AddSingleton<SDB>();
 
